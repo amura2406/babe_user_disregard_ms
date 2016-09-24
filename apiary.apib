@@ -111,7 +111,7 @@ If `uid` id not found then return **HTTP 404**.
 
 + Response (application/json)
     + Attributes
-        + pubIds: 4, 7, 9, 30, 111 (array[number]) - Array of all `categoryId` which are disregarded.
+        + catIds: 4, 7, 9, 30, 111 (array[number]) - Array of all `categoryId` which are disregarded.
         
 + Response 404 (application/json)
     Return when User ID is not found.
@@ -122,6 +122,12 @@ If `uid` id not found then return **HTTP 404**.
     Return when server has internal error and can't continue fulfilling the request
 
     + Attributes (DefaultError503)
+
+
+
+
+
+
 
 # Data Structures
 
