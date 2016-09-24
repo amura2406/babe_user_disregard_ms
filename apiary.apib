@@ -1,80 +1,150 @@
 FORMAT: 1A
-HOST: http://polls.apiblueprint.org/
+HOST: http://localhost/user_disregard/v1/
 
 # babe-user-disregard-ms
 
-Polls is a simple API allowing consumers to view polls and vote in them.
+The User Disregard Service objective is to store user's disregard list, be it by category or by source publisher.
 
-## Questions Collection [/questions]
+The service will share storage on `OrientDB` with User Microservice.
 
-### List All Questions [GET]
+There is chance this service will need access to `Redis` and also will share User Microservice `Redis Cluster`.
 
-+ Response 200 (application/json)
+# Group User Disregard
 
-        [
-            {
-                "question": "Favourite programming language?",
-                "published_at": "2015-08-05T08:40:51.620Z",
-                "choices": [
-                    {
-                        "choice": "Swift",
-                        "votes": 2048
-                    }, {
-                        "choice": "Python",
-                        "votes": 1024
-                    }, {
-                        "choice": "Objective-C",
-                        "votes": 512
-                    }, {
-                        "choice": "Ruby",
-                        "votes": 256
-                    }
-                ]
-            }
-        ]
+## Disregard Publisher [/publisher/{uid}]
 
-### Create a New Question [POST]
++ Parameters
+    + uid: 123 (number, required) - User ID.
 
-You may create your own question using this action. It takes a JSON
-object containing a question and a collection of answers in the
-form of choices.
+### Add Publisher Id on Disregard List [PUT]
+
+Add a `publisherId` on specific user's disregard list.
+
+Create relationship (if it hasn't) from a `Publisher` node containing `publisherId` field.
+
+If `uid` id not found then return **HTTP 404**.
+
+If `publisherId` is not found in DB then create a new `Publisher` node, otherwise use the existing node.
 
 + Request (application/json)
+    + Attributes
+        + publisherId: 9 (number, required) - Publisher ID to be disregarded.
 
-        {
-            "question": "Favourite programming language?",
-            "choices": [
-                "Swift",
-                "Python",
-                "Objective-C",
-                "Ruby"
-            ]
-        }
++ Response 204
 
-+ Response 201 (application/json)
++ Response 400 (application/json)
+    Return when parameters requirement not met correctly
+    
+    + Attributes (DefaultError400)
+        
++ Response 404 (application/json)
+    Return when User ID is not found.
+    
+    + Attributes (DefaultError404)
 
-    + Headers
++ Response 503 (application/json)
+    Return when server has internal error and can't continue fulfilling the request
 
-            Location: /questions/2
+    + Attributes (DefaultError503)
 
-    + Body
+### Get User's Publisher Disregard List [GET]
 
-            {
-                "question": "Favourite programming language?",
-                "published_at": "2015-08-05T08:40:51.620Z",
-                "choices": [
-                    {
-                        "choice": "Swift",
-                        "votes": 0
-                    }, {
-                        "choice": "Python",
-                        "votes": 0
-                    }, {
-                        "choice": "Objective-C",
-                        "votes": 0
-                    }, {
-                        "choice": "Ruby",
-                        "votes": 0
-                    }
-                ]
-            }
+Returns all `publisherId` which are disregarded by specified `uid` as an `array of int`.
+
+If `uid` id not found then return **HTTP 404**.
+
++ Response (application/json)
+    + Attributes
+        + pubIds: 1, 3, 9, 11, 35 (array[number]) - Array of all `publisherId` which are disregarded.
+        
++ Response 404 (application/json)
+    Return when User ID is not found.
+    
+    + Attributes (DefaultError404)
+
++ Response 503 (application/json)
+    Return when server has internal error and can't continue fulfilling the request
+
+    + Attributes (DefaultError503)
+
+## Disregard Category [/category/{uid}]
+
++ Parameters
+    + uid: 123 (number, required) - User ID.
+
+### Add Category Id on Disregard List [PUT]
+
+Add a `categoryId` on specific user's disregard list.
+
+Create relationship (if it hasn't) from a `Category` node containing `categoryId` field.
+
+If `uid` id not found then return **HTTP 404**.
+
+If `categoryId` is not found in DB then create a new `Category` node, otherwise use the existing node.
+
++ Request (application/json)
+    + Attributes
+        + categoryId: 17 (number, required) - Category ID to be disregarded.
+
++ Response 204
+
++ Response 400 (application/json)
+    Return when parameters requirement not met correctly
+    
+    + Attributes (DefaultError400)
+        
++ Response 404 (application/json)
+    Return when User ID is not found.
+    
+    + Attributes (DefaultError404)
+
++ Response 503 (application/json)
+    Return when server has internal error and can't continue fulfilling the request
+
+    + Attributes (DefaultError503)
+
+### Get User's Category Disregard List [GET]
+
+Returns all `categoryId` which are disregarded by specified `uid` as an `array of int`.
+
+If `uid` id not found then return **HTTP 404**.
+
++ Response (application/json)
+    + Attributes
+        + pubIds: 4, 7, 9, 30, 111 (array[number]) - Array of all `categoryId` which are disregarded.
+        
++ Response 404 (application/json)
+    Return when User ID is not found.
+    
+    + Attributes (DefaultError404)
+
++ Response 503 (application/json)
+    Return when server has internal error and can't continue fulfilling the request
+
+    + Attributes (DefaultError503)
+
+# Data Structures
+
+## Error (object)
++ errCode (number) - Error Code
++ errMsg (string) - Error Message
+
+## DefaultError400 (Error)
++ errCode: `-1`
++ errMsg: Invalid Request
+
+## DefaultError401 (Error)
++ errCode: `-2`
++ errMsg: Authorization needed to access resource
+
+## DefaultError404 (Error)
++ errCode: `-5`
++ errMsg: Resource not found
+
+## DefaultError413 (Error)
++ errCode: `-14`
++ errMsg: Request Entity Too Large
+
+## DefaultError503 (Error)
++ errCode: `-10`
++ errMsg: Backend service is down
