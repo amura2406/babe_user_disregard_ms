@@ -106,8 +106,9 @@ Steps to retrieve are as follow:
 
 1. Check on redis key `exc-filters:{uid}` which value should be exclusion filter model encoded in `Protobuf`.
 2. If not found on redis, check on DB for specified `uid`. Return the `exclusion_filter` field.
-3. If `uid` id not found then return **HTTP 404**.
-4. Otherwise return the model.
+4. If `exclusion_filter` was retrieved from DB, then populate redis key `exc-filters:{uid}` with `exclusion_filter` encoded in Protobuf (binary) **TTL to 3 days** (Make it configurable).   
+5. If `uid` id not found then return **HTTP 404**.
+6. Otherwise return the model.
 
 + Response 200 (application/json)
     + Attributes (ExclusionFilterModel)
