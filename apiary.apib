@@ -7,6 +7,18 @@ The User Exclusion Filter Service objective is to store user's disregard list, b
 
 The service will use it's own storage in `MySQL` DB and also will use it's own caching on `Redis`.
 
+The database will be called `exclusion` database.
+
+It has 1 table called `user_exclusion`
+
+| Field Name       | Type         | Java Type      |
+|------------------|--------------|----------------|
+| uid              | Unsigned Int | long           |
+| exclusion_filter | BLOB         | ProtobufModel  |
+| last_update      | DateTime     | java.util.Date |
+
+
+
 # Group User Exclusion Filter 
 
 ## Exclusion Filter [/{uid}]
