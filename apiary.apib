@@ -1,34 +1,36 @@
 FORMAT: 1A
-HOST: http://localhost/user_disregard/v1/
+HOST: http://localhost;9000/user_exclusion/v1
 
-# babe-user-disregard-ms
+# BABE User Exclusion Filter Microservice
 
-The User Disregard Service objective is to store user's disregard list, be it by category or by source publisher.
+The User Exclusion Filter Service objective is to store user's disregard list, be it by category or by source publisher.
 
-The service will share storage on `OrientDB` with User Microservice.
+The service will use it's own storage in `MySQL` DB and also will use it's own caching on `Redis`.
 
-There is chance this service will need access to `Redis` and also will share User Microservice `Redis Cluster`.
+# Group User Exclusion Filter 
 
-# Group User Disregard
-
-## Disregard Publisher [/publisher/{uid}]
+## Data Manipulation [/{uid}]
 
 + Parameters
     + uid: 123 (number, required) - User ID.
 
-### Add Publisher Id on Disregard List [PUT]
+### Add Exclusion Filters [PATCH]
 
-Add a `publisherId` on specific user's disregard list.
+Add exclusion filters to the exclusion filter stored on DB, steps are as follow:
 
-Create relationship (if it hasn't) from a `Publisher` node containing `publisherId` field.
+1. Get exclusion filter model (Object) from DB on specific `uid`. 
+2. Update the exclusion filter model by appending the supplied keys that are defined.
+3. Make sure every list on exclusion filter model **(eg: catIds, etc)**, should be **treated** as a **Set**. Meaning all items inside should be unique.
+4. Put the exclusion filter model back to DB (UPDATE).
+5. Response OK to caller.
 
-If `uid` id not found then return **HTTP 404**.
+**NB:**
 
-If `publisherId` is not found in DB then create a new `Publisher` node, otherwise use the existing node.
+- If `uid` id not found then return **HTTP 404**.
+- If payload is empty or the object contain nothing, response **HTTP 204** as soon as possible.
 
 + Request (application/json)
-    + Attributes
-        + publisherId: 9 (number, required) - Publisher ID to be disregarded.
+    + Attributes (ExclusionFilterModel)
 
 + Response 204
 
@@ -47,45 +49,22 @@ If `publisherId` is not found in DB then create a new `Publisher` node, otherwis
 
     + Attributes (DefaultError503)
 
-### Get User's Publisher Disregard List [GET]
+### Put/Replace Exclusion Filters [PUT]
 
-Returns all `publisherId` which are disregarded by specified `uid` as an `array of int`.
+Put/replace exclusion filters to the exclusion filter stored on DB, steps are as follow:
+ 
+1. Make sure every list on exclusion filter model **(eg: catIds, etc)**, should be **treated** as a **Set**. Meaning all items inside should be unique.
+2. **Upsert** the exclusion filter model to the DB.
+4. Response OK to caller.
 
-If `uid` id not found then return **HTTP 404**.
+**NB:**
 
-+ Response (application/json)
-    + Attributes
-        + pubIds: 1, 3, 9, 11, 35 (array[number]) - Array of all `publisherId` which are disregarded.
-        
-+ Response 404 (application/json)
-    Return when User ID is not found.
-    
-    + Attributes (DefaultError404)
-
-+ Response 503 (application/json)
-    Return when server has internal error and can't continue fulfilling the request
-
-    + Attributes (DefaultError503)
-
-## Disregard Category [/category/{uid}]
-
-+ Parameters
-    + uid: 123 (number, required) - User ID.
-
-### Add Category Id on Disregard List [PUT]
-
-Add a `categoryId` on specific user's disregard list.
-
-Create relationship (if it hasn't) from a `Category` node containing `categoryId` field.
-
-If `uid` id not found then return **HTTP 404**.
-
-If `categoryId` is not found in DB then create a new `Category` node, otherwise use the existing node.
+- If `uid` id not found then return **HTTP 404**.
+- If payload is empty or the object contain nothing, response **HTTP 204** as soon as possible.
 
 + Request (application/json)
-    + Attributes
-        + categoryId: 17 (number, required) - Category ID to be disregarded.
-
+    + Attributes (ExclusionFilterModel)
+    
 + Response 204
 
 + Response 400 (application/json)
@@ -102,16 +81,28 @@ If `categoryId` is not found in DB then create a new `Category` node, otherwise 
     Return when server has internal error and can't continue fulfilling the request
 
     + Attributes (DefaultError503)
+    
+    
+    
+    
+## Data Retrieval [/{uid}]
 
-### Get User's Category Disregard List [GET]
++ Parameters
+    + uid: 123 (number, required) - User ID.
+    
+### Get User Exclusion Filters [GET]
 
-Returns all `categoryId` which are disregarded by specified `uid` as an `array of int`.
+Returns exclusion filters model by specified `uid`.
 
-If `uid` id not found then return **HTTP 404**.
+Steps to retrieve are as follow:
+
+1. Check on redis key `exc-filters:{uid}` which value should be exclusion filter model encoded in `Protobuf`.
+2. If not found on redis, check on DB for specified `uid`. Return the `exclusion_filter` field.
+3. If `uid` id not found then return **HTTP 404**.
+4. Otherwise return the model.
 
 + Response (application/json)
-    + Attributes
-        + catIds: 4, 7, 9, 30, 111 (array[number]) - Array of all `categoryId` which are disregarded.
+    + Attributes (ExclusionFilterModel)
         
 + Response 404 (application/json)
     Return when User ID is not found.
@@ -122,14 +113,16 @@ If `uid` id not found then return **HTTP 404**.
     Return when server has internal error and can't continue fulfilling the request
 
     + Attributes (DefaultError503)
-
-
 
 
 
 
 
 # Data Structures
+
+## ExclusionFilterModel (object)
++ catIds: 1, 3, 5 (array[mumber], optional) - Category IDs to be disregarded.
++ srcIds: 66, 99, 101, 108 (array[number], optional) - Source IDs to be disregarded.
 
 ## Error (object)
 + errCode (number) - Error Code
